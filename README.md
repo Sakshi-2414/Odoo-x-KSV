@@ -116,8 +116,9 @@ Navigate to `http://localhost:3000` to view the application.
 ```text
 .
 ├── app/                  # Next.js App Router (Routes, API endpoints)
-│   ├── api/              # Backend endpoints (Approvals, POs, RFQs)
-│   └── (dashboard)/      # Frontend Procurement Command Center
+│   ├── (auth)/           # Authentication (Login/Signup) 
+│   ├── (dashboard)/      # Frontend Procurement Command Center
+│   └── api/              # Backend endpoints (Approvals, POs, RFQs)
 ├── components/           # React UI Components (Dashboard, Shared, AI)
 ├── features/             # Core Domain & AI Logic
 │   ├── ai/               # Gemini AI implementations (Copilot, Risk, Analyzer)
