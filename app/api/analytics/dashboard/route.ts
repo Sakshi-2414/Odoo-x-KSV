@@ -1,4 +1,5 @@
-import createSupabaseServer from '../../../lib/supabase/server';
+import { NextResponse } from 'next/server';
+import createSupabaseServer from '../../../../lib/supabase/server';
 
 const supabase = createSupabaseServer();
 
@@ -23,7 +24,7 @@ export async function GET() {
 
 	const errors = [rfqsResult.error, approvalsResult.error, purchaseOrdersResult.error, quotationsResult.error, vendorsResult.error, activitiesResult.error].filter(Boolean);
 	if (errors.length > 0) {
-		return Response.json({ error: errors[0]?.message || 'Failed to load dashboard analytics' }, { status: 500 });
+		return NextResponse.json({ error: errors[0]?.message || 'Failed to load dashboard analytics' }, { status: 500 });
 	}
 
 	const activeRfqs = rfqsResult.data?.length ?? 0;
@@ -55,7 +56,7 @@ export async function GET() {
 		created_at: activity.created_at,
 	}));
 
-	return Response.json({
+	return NextResponse.json({
 		kpis: {
 			active_rfqs: activeRfqs,
 			pending_approvals: pendingApprovals,
@@ -68,4 +69,3 @@ export async function GET() {
 		quotations_reviewed: quotationsResult.data?.length ?? 0,
 	});
 }
-
