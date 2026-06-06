@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import createSupabaseServer from '../../../../lib/supabase/server';
+import { analyzeQuotations, RFQContext, QuotationData } from '../../../../features/ai/quotation-analyzer';
 
 const supabase = createSupabaseServer();
 
@@ -42,46 +43,45 @@ export async function POST(request: Request) {
 			});
 		}
 
-		const bestPrice = quotations.reduce((best: any, current: any) => (Number(current.total_amount) < Number(best.total_amount) ? current : best), quotations[0]);
-		const fastestDelivery = quotations.reduce((best: any, current: any) => {
-			const bestDays = Number(best.delivery_days ?? Number.MAX_SAFE_INTEGER);
-			const currentDays = Number(current.delivery_days ?? Number.MAX_SAFE_INTEGER);
-			return currentDays < bestDays ? current : best;
-		}, quotations[0]);
+		// Map db data to structures expected by the analyzer
+		const rfqContext: RFQContext = {
+			title: rfqResult.data.title,
+			budget: rfqResult.data.budget,
+			deadline: rfqResult.data.submission_deadline,
+			items: rfqResult.data.items,
+		};
 
-		const averagePrice = quotations.reduce((total: number, quotation: any) => total + Number(quotation.total_amount || 0), 0) / quotations.length;
-		const selectedVendor = vendorsResult.data?.find((vendor: any) => vendor.id === bestPrice.vendor_id) || null;
-		const bestOverall = quotations.reduce((best: any, current: any) => {
-			const bestScore = Number(best.ai_score ?? 0) + (Number(best.total_amount) <= averagePrice ? 5 : 0);
-			const currentScore = Number(current.ai_score ?? 0) + (Number(current.total_amount) <= averagePrice ? 5 : 0);
-			return currentScore > bestScore ? current : best;
-		}, quotations[0]);
+		const quotationDataList: QuotationData[] = quotations.map((q: any) => {
+			const vendor = vendorsResult.data?.find((v: any) => v.id === q.vendor_id);
+			return {
+				id: q.id,
+				vendor_id: q.vendor_id,
+				vendor_name: vendor?.name || 'Unknown Vendor',
+				trust_score: vendor?.trust_score || 50,
+				total_amount: Number(q.total_amount),
+				unit_price: q.line_items?.[0]?.unit_price ? Number(q.line_items[0].unit_price) : null,
+				delivery_days: q.delivery_days ? Number(q.delivery_days) : null,
+				payment_terms: q.payment_terms || null,
+				on_time_history: vendor?.on_time_delivery ? Number(vendor.on_time_delivery) : undefined,
+				attachments: Boolean(q.attachments && q.attachments.length > 0),
+			};
+		});
 
-		const riskFlags: string[] = [];
-		if (selectedVendor && !selectedVendor.is_approved) riskFlags.push('Best price vendor is not approved');
-		if (quotations.length >= 2) {
-			const totals = quotations.map((quotation: any) => Number(quotation.total_amount) || 0);
-			const spread = Math.max(...totals) - Math.min(...totals);
-			if (spread > averagePrice * 0.2) riskFlags.push('Large price spread detected across quotations');
-		}
+		// Call Gemini analyzer
+		const aiAnalysis = await analyzeQuotations(rfqContext, quotationDataList);
 
-		const recommendation = selectedVendor && selectedVendor.is_approved
-			? `Award to ${selectedVendor.name} based on price and vendor health.`
-			: 'Review vendor approval status before awarding the quotation.';
+		// Update quotations in DB with the AI score/analysis
+		// This is just mapping back some context if needed, though strictly we might just store the analysis against the RFQ.
+		await supabase.from('rfqs').update({ ai_summary: aiAnalysis.recommendation }).eq('id', body.rfq_id);
 
 		return NextResponse.json({
-			analysis: {
-				best_price: bestPrice,
-				fastest_delivery: fastestDelivery,
-				best_overall: bestOverall,
-				risk_flags: riskFlags,
-				market_context: `Compared ${quotations.length} quotation(s) against an average price of ${averagePrice.toFixed(2)} ${rfqResult.data.currency || 'USD'}.`,
-				recommendation,
-			},
+			analysis: aiAnalysis,
 			processing_time_ms: Date.now() - startedAt,
 		});
 	} catch (err: any) {
+		console.error('API Error in analyze-quotes:', err);
 		return NextResponse.json({ error: err?.message || 'Invalid request' }, { status: 400 });
 	}
 }
+
 

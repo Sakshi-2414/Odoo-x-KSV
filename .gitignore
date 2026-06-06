@@ -11,7 +11,7 @@ coverage/
 *.tsbuildinfo
 .eslintcache
 
-# environment files
+# environment files (includes GEMINI_API_KEY)
 .env
 .env.local
 .env.development.local
@@ -22,7 +22,8 @@ coverage/
 # local seed metadata
 scripts/seed-ids.json
 
-# logs and runtime files
+# AI agent artifacts & local logs
+.gemini/
 *.log
 *.pid
 npm-debug.log*

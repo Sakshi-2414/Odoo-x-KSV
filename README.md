@@ -19,13 +19,14 @@ This repository currently contains the Next.js application shell, typed domain m
 - Supabase
 - Zod
 - Resend
-- Gemini / AI integration hooks
+- Google Gen AI (Gemini 2.5 Flash)
 
 ## Prerequisites
 
 - Node.js 18+ recommended
 - npm
 - A Supabase project
+- A Gemini API Key (available free via Google AI Studio)
 
 ## Setup
 
@@ -42,6 +43,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 3. Start the development server:
@@ -87,16 +89,34 @@ npm run cleanup:supabase
 ## Project Structure
 
 ```text
-app/          Next.js app routes and route groups
-components/   UI components for dashboard, AI, vendors, and procurement flows
-features/     Domain logic for AI and procurement workflows
-hooks/        React hooks for approvals, RFQs, vendors, realtime, and AI copilot
-lib/          Shared utilities and Supabase clients
-scripts/      Seed and cleanup scripts for Supabase
-services/     Service-layer modules for procurement objects
-types/        TypeScript domain models
-utils/        Formatting, validation, and generator helpers
+.
+├── app/                  Next.js App Router (Routes & Layouts)
+│   ├── api/ai/           Endpoints for AI Copilot, Quotes, and Scoring
+│   ├── (auth)/           Login and Authentication
+│   ├── (dashboard)/      Procurement Command Center (Approvals, RFQs, etc.)
+│   └── vendor-portal/    External portal for vendors to submit quotes
+├── components/           React UI Components
+│   ├── ai/               AI Copilot Chat UI
+│   ├── dashboard/        Metrics, Charts, and Live Trackers
+│   ├── layout/           Sidebars, Navbars, Wrappers
+│   ├── quotations/       Quote Comparison UI
+│   ├── rfqs/             RFQ creation forms
+│   └── shared/           Reusable UI elements
+├── features/             Core Domain & AI Logic
+│   ├── ai/               Gemini AI implementations (Copilot, Risk, Analyzer)
+│   ├── notifications/    Email/In-app alerts
+│   └── procurement/      Business logic for POs, Approvals
+├── hooks/                React hooks for realtime data and state management
+├── lib/                  Shared utilities and Supabase server/client
+├── scripts/              Supabase Seed and Cleanup scripts
+├── services/             Service-layer for Supabase Database operations
+├── types/                TypeScript definitions and Zod schemas
+└── utils/                Helper functions (formatters, generators)
 ```
+
+## AI Implementation Details
+
+The backend AI logic relies on the official `@google/genai` library and `gemini-2.5-flash` to handle intent parsing, multi-variable vendor scoring, and quotation analysis. It includes built-in retry mechanisms to safely handle Free Tier rate limits (15 RPM).
 
 ## Notes
 

@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server';
 import createSupabaseServer from '../../../../lib/supabase/server';
+import { processCopilotMessage, CopilotContext } from '../../../../features/ai/copilot';
 
 const supabase = createSupabaseServer();
-
-function extractBudget(message: string) {
-	const match = message.match(/\$?([\d,]+(?:\.\d{1,2})?)/);
-	if (!match) return null;
-	return Number(match[1].replace(/,/g, ''));
-}
-
-function extractTitle(message: string) {
-	const words = message.replace(/create|make|new|rfq|for|budget|usd|dollars|dollar|laptops?/gi, '').trim();
-	return words || 'New RFQ';
-}
 
 export async function POST(request: Request) {
 	try {
@@ -22,52 +12,41 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'message is required' }, { status: 400 });
 		}
 
-		const lower = message.toLowerCase();
-		let response = {
-			message: "I can help with that.",
-			action: null as null | { type: string; data: Record<string, unknown> },
-			suggestions: ['Add more detail', 'Specify vendor or deadline'],
+		// In a real implementation, you would authenticate the user and get their real org.
+		// Here we mock the context setup, but pull real stats from the DB.
+		const orgId = body.context?.org_id;
+
+		const [rfqsResult, approvalsResult, posResult] = await Promise.all([
+			supabase.from('rfqs').select('id', { count: 'exact' }).eq('status', 'active'),
+			supabase.from('approvals').select('id', { count: 'exact' }).eq('status', 'pending'),
+			supabase.from('purchase_orders').select('id', { count: 'exact' }).in('status', ['issued', 'in_progress'])
+		]);
+
+		const context: CopilotContext = {
+			orgName: 'VendorBridge Demo Org',
+			userName: body.context?.user_name || 'Procurement Manager',
+			userRole: body.context?.user_role || 'Manager',
+			date: new Date().toLocaleDateString(),
+			stats: {
+				activeRfqs: rfqsResult.count || 0,
+				pendingApprovals: approvalsResult.count || 0,
+				openPos: posResult.count || 0,
+			},
+			dbSummary: {
+				// Provide lightweight metadata or summaries for Gemini to understand current state
+				recent_activity: 'Many recent RFQs for IT Equipment.'
+			}
 		};
 
-		if (lower.includes('rfq')) {
-			response = {
-				message: "I'll create that RFQ for you. Here's what I've prepared:",
-				action: {
-					type: 'create_rfq',
-					data: {
-						title: extractTitle(message),
-						budget: extractBudget(message),
-						category: lower.includes('laptop') || lower.includes('computer') ? 'IT Equipment' : 'General Procurement',
-					},
-				},
-				suggestions: ['Add delivery deadline', 'Specify brand preference'],
-			};
-		} else if (lower.includes('vendor')) {
-			response = {
-				message: 'I can help review vendor quality and trust score.',
-				action: {
-					type: 'review_vendor',
-					data: { vendor_id: body.context?.vendor_id || null },
-				},
-				suggestions: ['Share vendor name', 'Provide org context'],
-			};
-		} else if (lower.includes('quote')) {
-			response = {
-				message: 'I can compare quotations and highlight the best option.',
-				action: {
-					type: 'compare_quotes',
-					data: { rfq_id: body.context?.rfq_id || null },
-				},
-				suggestions: ['Include the RFQ id', 'Ask for risk flags'],
-			};
-		}
+		const response = await processCopilotMessage(message, context, body.history || []);
 
-		if (body.context?.org_id) {
-			await supabase.from('activities').insert([{ title: `Copilot request: ${message.slice(0, 100)}`, org_id: body.context.org_id }]);
+		if (orgId) {
+			await supabase.from('activities').insert([{ action: 'copilot_request', metadata: { query: message.slice(0, 100) }, org_id: orgId }]);
 		}
 
 		return NextResponse.json(response);
 	} catch (err: any) {
+		console.error('API Error in copilot:', err);
 		return NextResponse.json({ error: err?.message || 'Invalid request' }, { status: 400 });
 	}
 }
