@@ -22,19 +22,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 
-    // 2. Sign in immediately to generate the session token
-    const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const userId = createdUser.user?.id;
 
-    if (loginError) {
-      return NextResponse.json({ error: 'Account created, but auto-login failed: ' + loginError.message }, { status: 400 });
-    }
-
-    const userId = authData.user?.id;
-
-    // 2. Create user in public.users table
+    // 2. Create user in public.users table (Using service role key before it gets overwritten by signInWithPassword)
     if (userId) {
       const { error: dbError } = await supabase.from('users').insert([
         {
@@ -49,6 +39,16 @@ export async function POST(request: Request) {
         // Fallback: If public table insert fails, log it but still return success since auth was created.
         console.error('Failed to insert into public.users:', dbError);
       }
+    }
+
+    // 3. Sign in immediately to generate the session token
+    const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (loginError) {
+      return NextResponse.json({ error: 'Account created, but auto-login failed: ' + loginError.message }, { status: 400 });
     }
 
     if (authData.session?.access_token) {
