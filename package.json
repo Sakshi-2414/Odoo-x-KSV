@@ -1,0 +1,20 @@
+{
+  "name": "odoo-x-ksv",
+  "version": "1.0.1",
+  "description": "Odoo X KSV is a module that integrates Odoo with KSV, a powerful data analytics platform. This module allows users to seamlessly connect their Odoo instance with KSV, enabling them to leverage KSV's advanced analytics capabilities to gain insights from their Odoo data.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Sakshi-2414",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sakshi-2414/Odoo-x-KSV.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Sakshi-2414/Odoo-x-KSV/issues"
+  },
+  "homepage": "https://github.com/Sakshi-2414/Odoo-x-KSV#readme"
+}
