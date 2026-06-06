@@ -118,6 +118,14 @@ npm run cleanup:supabase
 
 The backend AI logic relies on the official `@google/genai` library and `gemini-2.5-flash` to handle intent parsing, multi-variable vendor scoring, and quotation analysis. It includes built-in retry mechanisms to safely handle Free Tier rate limits (15 RPM).
 
+## Backend Business Logic
+
+The core procurement workflows are fully implemented and automated in the `features/procurement/` directory:
+- **Purchase Orders**: Auto-generates Draft POs upon quotation award and tracks vendor issuance metrics.
+- **Approvals**: Dynamic multi-tier workflow routing. High-value requests (>$10k) automatically escalate from Manager to Director, executing the final business action when fully approved.
+- **RFQs & Quotations**: Enforces state integrity (e.g., auto-rejecting competing quotes when a winner is chosen) and manages active publishing states.
+- **Notifications**: Includes a Resend email wrapper with a safe mock-mode fallback for local development without API keys.
+
 ## Notes
 
 - The repository is set up around the VendorBridge AI procurement workflow described in `vendorbridge-ai-blueprint.md`.

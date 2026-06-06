@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import createSupabaseServer from '../../../lib/supabase/server';
+import { publishRFQ } from '../../../features/procurement/rfq';
 
 const supabase = createSupabaseServer();
 
@@ -35,6 +36,16 @@ export async function POST(request: Request) {
 
 		const { data, error } = await supabase.from('rfqs').insert([payload]).select().single();
 		if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+		// If the user immediately creates it as 'active', trigger the publish workflow
+		if (payload.status === 'active') {
+			try {
+				await publishRFQ(data.id);
+			} catch (publishErr) {
+				console.error('Failed to publish RFQ:', publishErr);
+			}
+		}
+
 		return NextResponse.json(data, { status: 201 });
 	} catch (err: any) {
 		return NextResponse.json({ error: err?.message || 'Invalid request' }, { status: 400 });
