@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, Trophy, Zap, Award, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
@@ -12,9 +13,26 @@ import { notFound } from "next/navigation";
 
 export default function CompareQuotes({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
+  const router = useRouter();
   const [rfq, setRfq] = useState<any>(null);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [awardingId, setAwardingId] = useState<string | null>(null);
+
+  const handleAward = async (quoteId: string) => {
+    setAwardingId(quoteId);
+    try {
+      const res = await fetch(`/api/quotations/${quoteId}/award`, { method: "POST" });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      router.push(`/purchase-orders/${data.purchase_order?.id || data.po_id || ''}`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to award quotation.");
+    } finally {
+      setAwardingId(null);
+    }
+  };
 
   useEffect(() => {
     async function load() {
@@ -111,7 +129,9 @@ export default function CompareQuotes({ params }: { params: Promise<{ id: string
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <Button size="sm" variant={i === 0 ? "default" : "outline"}>Award</Button>
+                      <Button size="sm" variant={i === 0 ? "default" : "outline"} disabled={awardingId === q.id} onClick={() => handleAward(q.id)}>
+                        {awardingId === q.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Award"}
+                      </Button>
                     </td>
                   </tr>
                 )})}
@@ -134,8 +154,8 @@ export default function CompareQuotes({ params }: { params: Promise<{ id: string
               <div className="mt-4 rounded-lg bg-muted/50 p-3 text-sm">
                 <strong>Market context:</strong> All quotes within reasonable range for this category.
               </div>
-              <Button className="mt-4 gap-1.5">
-                <Award className="h-4 w-4" /> Award to {best?.vendor_name || 'Vendor'}
+              <Button className="mt-4 gap-1.5" disabled={awardingId === best?.id} onClick={() => best?.id && handleAward(best.id)}>
+                {awardingId === best?.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />} Award to {best?.vendor_name || 'Vendor'}
               </Button>
             </div>
 

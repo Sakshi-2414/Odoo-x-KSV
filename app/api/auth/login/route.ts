@@ -37,6 +37,16 @@ export async function POST(request: Request) {
       await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', userId);
     }
 
+    if (authData.session?.access_token) {
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      cookieStore.set('vend_auth', authData.session.access_token, {
+        path: '/',
+        httpOnly: true,
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+
     return NextResponse.json({ 
       user: {
         id: userId,

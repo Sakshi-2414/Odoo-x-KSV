@@ -98,7 +98,26 @@ export default function InvoiceDetail({ params }: { params: Promise<{ id: string
 
             <div className="rounded-2xl border bg-card p-5 space-y-2">
               <h3 className="font-display font-semibold mb-2">Actions</h3>
-              <Button className="w-full gap-1.5"><Check className="h-4 w-4" /> Approve for payment</Button>
+              <Button 
+                className="w-full gap-1.5"
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/invoices/${id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ payment_status: 'approved' })
+                    });
+                    if (res.ok) {
+                      setInv({ ...inv, payment_status: 'approved' });
+                    }
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
+                disabled={inv.payment_status === 'approved'}
+              >
+                <Check className="h-4 w-4" /> {inv.payment_status === 'approved' ? 'Approved' : 'Approve for payment'}
+              </Button>
               <Button variant="outline" className="w-full text-destructive hover:text-destructive">Raise dispute</Button>
               <Button variant="outline" className="w-full">Send reminder</Button>
             </div>

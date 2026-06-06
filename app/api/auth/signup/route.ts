@@ -39,6 +39,16 @@ export async function POST(request: Request) {
       }
     }
 
+    if (authData.session?.access_token) {
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      cookieStore.set('vend_auth', authData.session.access_token, {
+        path: '/',
+        httpOnly: true,
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+
     return NextResponse.json({ user: authData.user, session: authData.session }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });

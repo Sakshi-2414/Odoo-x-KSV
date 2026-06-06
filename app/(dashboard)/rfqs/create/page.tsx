@@ -19,6 +19,15 @@ export default function CreateRFQ() {
   const [vendors, setVendors] = useState<any[]>([]);
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
 
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("IT Equipment");
+  const [budget, setBudget] = useState("");
+  const [priority, setPriority] = useState("Medium");
+  const [deadline, setDeadline] = useState("");
+  const [delivery, setDelivery] = useState("");
+  const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     async function loadVendors() {
       try {
@@ -37,6 +46,41 @@ export default function CreateRFQ() {
 
   const toggleVendor = (id: string) =>
     setSelectedVendors((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/rfqs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          org_id: "org-acme-123",
+          rfq_number: `RFQ-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+          title,
+          category,
+          budget: budget ? parseFloat(budget) : null,
+          priority: priority.toLowerCase(),
+          submission_deadline: deadline || new Date(Date.now() + 7 * 86400000).toISOString(),
+          delivery_date: delivery || null,
+          description,
+          items,
+          status: "active" // Active immediately starts the publish workflow
+        }),
+      });
+
+      if (res.ok) {
+        router.push("/rfqs");
+      } else {
+        const err = await res.json();
+        alert("Failed to create RFQ: " + (err.error || "Unknown error"));
+        setIsSubmitting(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred");
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -73,10 +117,10 @@ export default function CreateRFQ() {
               <h2 className="font-display text-lg font-semibold">RFQ Details</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Title">
-                  <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="e.g. 100 Dell Laptops" />
+                  <input value={title} onChange={e => setTitle(e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="e.g. 100 Dell Laptops" />
                 </Field>
                 <Field label="Category">
-                  <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
+                  <select value={category} onChange={e => setCategory(e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
                     <option>IT Equipment</option>
                     <option>Office Furniture</option>
                     <option>Datacenter</option>
@@ -84,22 +128,22 @@ export default function CreateRFQ() {
                   </select>
                 </Field>
                 <Field label="Budget (USD)">
-                  <input type="number" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="80000" />
+                  <input type="number" value={budget} onChange={e => setBudget(e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="80000" />
                 </Field>
                 <Field label="Priority">
-                  <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
+                  <select value={priority} onChange={e => setPriority(e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
                     <option>Low</option><option>Medium</option><option>High</option><option>Urgent</option>
                   </select>
                 </Field>
                 <Field label="Submission Deadline">
-                  <input type="date" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                  <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
                 </Field>
                 <Field label="Expected Delivery">
-                  <input type="date" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                  <input type="date" value={delivery} onChange={e => setDelivery(e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
                 </Field>
               </div>
               <Field label="Description">
-                <textarea rows={4} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="Provide context for vendors…" />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="Provide context for vendors…" />
               </Field>
               <div className="rounded-xl bg-primary-soft/60 border border-primary/20 p-4 flex gap-3">
                 <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -182,16 +226,16 @@ export default function CreateRFQ() {
           )}
 
           <div className="flex items-center justify-between pt-4 border-t">
-            <Button variant="outline" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>
+            <Button variant="outline" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0 || isSubmitting}>
               <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
             </Button>
             {step < 2 ? (
-              <Button onClick={() => setStep(step + 1)}>
+              <Button onClick={() => setStep(step + 1)} disabled={isSubmitting}>
                 Next <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
             ) : (
-              <Button onClick={() => router.push("/rfqs")} className="gap-1.5">
-                <Check className="h-4 w-4" /> Publish RFQ
+              <Button onClick={handleSubmit} className="gap-1.5" disabled={isSubmitting || !title || !deadline}>
+                <Check className="h-4 w-4" /> {isSubmitting ? "Publishing..." : "Publish RFQ"}
               </Button>
             )}
           </div>
