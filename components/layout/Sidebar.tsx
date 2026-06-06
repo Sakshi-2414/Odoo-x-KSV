@@ -15,6 +15,7 @@ import {
   Users,
   Settings,
   Boxes,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -114,7 +115,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
-        <div className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-white/5">
+        <div className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-white/5 group relative">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-info flex items-center justify-center text-xs font-semibold text-white">
             SC
           </div>
@@ -122,6 +123,16 @@ export function Sidebar() {
             <div className="text-sm font-medium truncate">Sarah Chen</div>
             <div className="text-[11px] text-sidebar-muted truncate">Procurement Manager</div>
           </div>
+          <button 
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              window.location.href = '/login';
+            }}
+            className="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-md transition-opacity"
+            title="Log out"
+          >
+            <LogOut className="h-4 w-4 text-sidebar-muted" />
+          </button>
         </div>
       </div>
     </aside>

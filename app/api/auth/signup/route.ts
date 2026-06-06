@@ -10,14 +10,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // 1. Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 1. Create user in Supabase Auth (Auto-confirm email using admin API)
+    const { data: createdUser, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+    if (authError) {
+      // If user already exists but isn't confirmed, we could handle that, but let's just surface the error
+      return NextResponse.json({ error: authError.message }, { status: 400 });
+    }
+
+    // 2. Sign in immediately to generate the session token
+    const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+    if (loginError) {
+      return NextResponse.json({ error: 'Account created, but auto-login failed: ' + loginError.message }, { status: 400 });
     }
 
     const userId = authData.user?.id;

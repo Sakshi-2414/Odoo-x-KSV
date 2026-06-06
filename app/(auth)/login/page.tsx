@@ -18,10 +18,10 @@ function LoginForm() {
     }
   }, [searchParams]);
   const [email, setEmail] = useState("sarah@acme.com");
-  const [pwd, setPwd] = useState("demo");
-  const [name, setName] = useState("");
+  const [pwd, setPwd] = useState("demo123");
+  const [name, setName] = useState("Sarah Jenkins");
   const [role, setRole] = useState("manager");
-  const [department, setDepartment] = useState("");
+  const [department, setDepartment] = useState("Procurement");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
