@@ -102,7 +102,14 @@ npm run seed:supabase
 npm run cleanup:supabase
 ```
 
-### 4. Start the Development Server
+### 4. Authentication Setup
+
+VendorBridge AI uses Supabase Auth with Row-Level Security (RLS). For local development:
+1. When accessing `http://localhost:3000`, you will be redirected to `/login`.
+2. **First Time:** Switch to "Create your account" and sign up with a test email (e.g., `test@example.com`) and password (minimum 6 characters, e.g., `demo123`).
+3. The system will use the Service Role API to automatically confirm your email and bypass standard email verification, routing you directly to the Dashboard.
+
+### 5. Start the Development Server
 
 ```bash
 npm run dev
