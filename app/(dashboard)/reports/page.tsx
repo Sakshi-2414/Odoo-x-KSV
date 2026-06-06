@@ -1,21 +1,40 @@
 "use client";
 
 
-import { useState } from "react";
-import { Download, Share2, Calendar, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, Share2, Calendar, Sparkles, Loader2 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { SPEND_BY_MONTH, VENDORS } from "@/utils/mock-data";
 import { fmtCurrency } from "@/utils/formatters";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
 import { cn } from "@/lib/utils";
-
-
 
 const TABS = ["Spend Overview", "Vendor Performance", "Efficiency", "AI Insights"] as const;
 
 export default function ReportsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Spend Overview");
+  const [data, setData] = useState<any>(null);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [dashRes, vendorRes] = await Promise.all([
+          fetch("/api/dashboard"),
+          fetch("/api/vendors")
+        ]);
+        if (dashRes.ok) setData(await dashRes.json());
+        if (vendorRes.ok) setVendors(await vendorRes.json());
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
   const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"];
   const pie = [
     { name: "IT Equipment", value: 312000 },
@@ -23,6 +42,14 @@ export default function ReportsPage() {
     { name: "Datacenter", value: 189000 },
     { name: "Logistics", value: 78000 },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -59,7 +86,7 @@ export default function ReportsPage() {
             <div className="lg:col-span-2 rounded-2xl border bg-card p-5">
               <h3 className="font-display font-semibold mb-1">Monthly Spend by Category</h3>
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={SPEND_BY_MONTH}>
+                <BarChart data={data?.spendByMonth || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                   <XAxis dataKey="month" stroke="var(--color-muted-foreground)" fontSize={12} />
                   <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickFormatter={(v) => `$${v / 1000}k`} />
@@ -90,7 +117,7 @@ export default function ReportsPage() {
           <div className="rounded-2xl border bg-card p-5">
             <h3 className="font-display font-semibold mb-3">Top Vendors by Trust Score</h3>
             <div className="space-y-2.5">
-              {[...VENDORS].sort((a, b) => b.trust_score - a.trust_score).map((v) => (
+              {vendors.sort((a, b) => b.trust_score - a.trust_score).slice(0, 10).map((v) => (
                 <div key={v.id} className="flex items-center gap-3">
                   <div className="w-40 text-sm truncate">{v.name}</div>
                   <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">

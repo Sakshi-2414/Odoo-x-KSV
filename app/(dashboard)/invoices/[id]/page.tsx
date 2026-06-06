@@ -1,26 +1,49 @@
-import Link from "next/link";
+"use client";
 
-import { ArrowLeft, Check, AlertTriangle, FileText } from "lucide-react";
+import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import { ArrowLeft, Check, AlertTriangle, FileText, Loader2 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { INVOICES } from "@/utils/mock-data";
 import { fmtCurrency, fmtDate } from "@/utils/formatters";
-
-
-
 import { notFound } from "next/navigation";
-import React from "react";
 
 export default function InvoiceDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
-  const inv = INVOICES.find((i) => i.id === id);
-  if (!inv) notFound();
+  const [inv, setInv] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`/api/invoices/${id}`);
+        if (!res.ok) throw new Error("Invoice not found");
+        setInv(await res.json());
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!inv) return notFound();
+
   const matched = inv.match_status === "matched" || inv.match_status === "approved";
 
   return (
     <>
-      <TopBar title={inv.invoice_number} subtitle={`From ${inv.vendor_name} · ${inv.po_number}`} />
+      <TopBar title={inv.invoice_number || id} subtitle={`From ${inv.vendor_name || inv.vendors?.name || 'Vendor'} · ${inv.purchase_orders?.po_number || inv.po_id}`} />
       <div className="p-6 max-w-5xl w-full space-y-6">
         <Link href="/invoices" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to invoices
@@ -31,12 +54,12 @@ export default function InvoiceDetail({ params }: { params: Promise<{ id: string
             <div className="p-6 border-b flex items-start justify-between">
               <div>
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">Invoice</div>
-                <div className="font-display text-2xl font-bold">{inv.invoice_number}</div>
-                <div className="text-sm text-muted-foreground mt-1">Issued {fmtDate(inv.issue_date)} · Due {fmtDate(inv.due_date)}</div>
+                <div className="font-display text-2xl font-bold">{inv.invoice_number || id}</div>
+                <div className="text-sm text-muted-foreground mt-1">Issued {fmtDate(inv.issue_date || inv.created_at)} · Due {fmtDate(inv.due_date || inv.created_at)}</div>
               </div>
               <div className="text-right">
-                <div className="font-display text-3xl font-bold tabular-nums">{fmtCurrency(inv.total)}</div>
-                <StatusBadge status={inv.payment_status} />
+                <div className="font-display text-3xl font-bold tabular-nums">{fmtCurrency(inv.total_amount || inv.total || 0)}</div>
+                <StatusBadge status={inv.payment_status || inv.status} />
               </div>
             </div>
 
@@ -68,7 +91,7 @@ export default function InvoiceDetail({ params }: { params: Promise<{ id: string
               </ul>
               {!matched && (
                 <div className="mt-3 rounded-lg bg-destructive/10 p-2.5 text-xs text-destructive">
-                  Variance detected: invoice exceeds PO by $480 (4.5%). Manual review required.
+                  Variance detected: invoice exceeds PO. Manual review required.
                 </div>
               )}
             </div>

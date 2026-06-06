@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import { processApprovalDecision } from '../../../../../features/procurement/approval';
 
-type RouteContext = {
-	params: Promise<{
-		id: string;
-	}>;
-};
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(request: Request, { params }: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
+	const params = await context.params;
 	try {
 		const { id } = await params;
 		const body = await request.json();

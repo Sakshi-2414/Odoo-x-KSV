@@ -3,13 +3,10 @@ import createSupabaseServer from '../../../../../lib/supabase/server';
 
 const supabase = createSupabaseServer();
 
-type RouteContext = {
-	params: {
-		id: string;
-	};
-};
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: RouteContext) {
+export async function GET(_request: Request, context: RouteContext) {
+	const params = await context.params;
 	const [rfqResult, quotationsResult] = await Promise.all([
 		supabase.from('rfqs').select('id, title, status, org_id').eq('id', params.id).single(),
 		supabase.from('quotations').select('*').eq('rfq_id', params.id).order('submitted_at', { ascending: false }),

@@ -3,23 +3,37 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Sparkles, Building2 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { VENDORS } from "@/utils/mock-data";
 import { TrustScoreGauge } from "@/components/vendors/TrustScoreGauge";
 import { cn } from "@/lib/utils";
-
-
 
 const STEPS = ["Details", "Items", "Vendors"] as const;
 
 export default function CreateRFQ() {
-  const nav = useNavigate();
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [items, setItems] = useState([{ name: "", qty: 1, unit: "units", specs: "" }]);
-  const [selectedVendors, setSelectedVendors] = useState<string[]>(VENDORS.slice(0, 3).map((v) => v.id));
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function loadVendors() {
+      try {
+        const res = await fetch("/api/vendors");
+        if (res.ok) {
+          const data = await res.json();
+          setVendors(data);
+          if (data.length > 0) setSelectedVendors(data.slice(0, 3).map((v: any) => v.id));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadVendors();
+  }, []);
 
   const toggleVendor = (id: string) =>
     setSelectedVendors((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -107,10 +121,10 @@ export default function CreateRFQ() {
               <div className="space-y-3">
                 {items.map((it, i) => (
                   <div key={i} className="grid grid-cols-12 gap-2 rounded-xl border bg-background p-3">
-                    <input placeholder="Item name" className="col-span-4 rounded-md border bg-card px-2.5 py-2 text-sm" />
-                    <input type="number" placeholder="Qty" className="col-span-2 rounded-md border bg-card px-2.5 py-2 text-sm" />
-                    <input placeholder="Unit" className="col-span-2 rounded-md border bg-card px-2.5 py-2 text-sm" />
-                    <input placeholder="Specifications" className="col-span-3 rounded-md border bg-card px-2.5 py-2 text-sm" />
+                    <input placeholder="Item name" value={it.name} onChange={(e) => { const n = [...items]; n[i].name = e.target.value; setItems(n); }} className="col-span-4 rounded-md border bg-card px-2.5 py-2 text-sm" />
+                    <input type="number" placeholder="Qty" value={it.qty} onChange={(e) => { const n = [...items]; n[i].qty = Number(e.target.value); setItems(n); }} className="col-span-2 rounded-md border bg-card px-2.5 py-2 text-sm" />
+                    <input placeholder="Unit" value={it.unit} onChange={(e) => { const n = [...items]; n[i].unit = e.target.value; setItems(n); }} className="col-span-2 rounded-md border bg-card px-2.5 py-2 text-sm" />
+                    <input placeholder="Specifications" value={it.specs} onChange={(e) => { const n = [...items]; n[i].specs = e.target.value; setItems(n); }} className="col-span-3 rounded-md border bg-card px-2.5 py-2 text-sm" />
                     <button
                       onClick={() => setItems(items.filter((_, x) => x !== i))}
                       className="col-span-1 rounded-md border bg-card hover:bg-destructive/10 hover:text-destructive flex items-center justify-center"
@@ -130,7 +144,7 @@ export default function CreateRFQ() {
               </h2>
               <p className="text-sm text-muted-foreground -mt-3">Top vendors matched by category and trust score</p>
               <div className="space-y-2">
-                {VENDORS.map((v) => {
+                {vendors.map((v) => {
                   const sel = selectedVendors.includes(v.id);
                   return (
                     <button
@@ -154,7 +168,7 @@ export default function CreateRFQ() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">{v.name}</div>
-                        <div className="text-xs text-muted-foreground">{v.category.join(", ")} · {v.country}</div>
+                        <div className="text-xs text-muted-foreground">{v.category?.join(", ")} · {v.country}</div>
                       </div>
                       <TrustScoreGauge score={v.trust_score} size="sm" />
                     </button>
@@ -176,7 +190,7 @@ export default function CreateRFQ() {
                 Next <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
             ) : (
-              <Button onClick={() => nav({ to: "/rfqs" })} className="gap-1.5">
+              <Button onClick={() => router.push("/rfqs")} className="gap-1.5">
                 <Check className="h-4 w-4" /> Publish RFQ
               </Button>
             )}
@@ -195,3 +209,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+

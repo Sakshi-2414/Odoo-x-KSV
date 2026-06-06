@@ -1,37 +1,66 @@
-import Link from "next/link";
+"use client";
 
-import { ArrowLeft, Mail, Phone, MapPin, Edit, Ban } from "lucide-react";
+import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import { ArrowLeft, Mail, Phone, MapPin, Edit, Ban, Loader2 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { TrustScoreGauge } from "@/components/vendors/TrustScoreGauge";
 import { Button } from "@/components/ui/button";
-import { VENDORS, POS } from "@/utils/mock-data";
 import { fmtCurrency, fmtDate, trustTier } from "@/utils/formatters";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
-
-
 import { notFound } from "next/navigation";
-import React from "react";
 
 export default function VendorDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
-  const vendor = VENDORS.find((v) => v.id === id);
-  if (!vendor) notFound();
-  const v = vendor;
-  const tier = trustTier(v.trust_score);
-  const orders = POS.filter((p) => p.vendor_name === v.name);
+  const [vendor, setVendor] = useState<any>(null);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    async function load() {
+      try {
+        const [vendorRes, ordersRes] = await Promise.all([
+          fetch(`/api/vendors/${id}`),
+          fetch(`/api/purchase-orders?vendor_id=${id}`)
+        ]);
+        if (!vendorRes.ok) throw new Error("Vendor not found");
+        setVendor(await vendorRes.json());
+        if (ordersRes.ok) setOrders(await ordersRes.json());
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!vendor) return notFound();
+
+  const v = vendor;
+  const tier = trustTier(v.trust_score || 50);
+
+  // Use mock values for some metrics if they don't exist in DB schema yet
   const breakdown = [
     { sig: "Price", value: 78 },
-    { sig: "Delivery", value: v.on_time },
-    { sig: "Response", value: Math.max(0, 100 - v.avg_response_days * 12) },
-    { sig: "Win Rate", value: v.win_rate * 2.2 },
-    { sig: "Dispute-Free", value: v.dispute_free },
+    { sig: "Delivery", value: v.on_time || 80 },
+    { sig: "Response", value: Math.max(0, 100 - (v.avg_response_days || 1) * 12) },
+    { sig: "Win Rate", value: (v.win_rate || 20) * 2.2 },
+    { sig: "Dispute-Free", value: v.dispute_free || 90 },
   ];
 
   return (
     <>
-      <TopBar title={v.name} subtitle={`${v.contact} · ${v.country}`} />
+      <TopBar title={v.name} subtitle={`${v.contact_name || 'Contact'} · ${v.country || 'Global'}`} />
       <div className="p-6 max-w-[1600px] w-full space-y-6">
         <Link href="/vendors" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to vendors
@@ -40,23 +69,23 @@ export default function VendorDetail({ params }: { params: Promise<{ id: string 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
             <div className="rounded-2xl border bg-card p-6 text-center">
-              <TrustScoreGauge score={v.trust_score} size="lg" />
+              <TrustScoreGauge score={v.trust_score || 50} size="lg" />
               <div className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${tier.bg} ${tier.color}`}>
                 {tier.label} Vendor
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-left">
-                <Stat label="Total orders" value={String(v.total_orders)} />
-                <Stat label="On-time" value={`${v.on_time}%`} />
-                <Stat label="Avg response" value={`${v.avg_response_days}d`} />
-                <Stat label="Win rate" value={`${v.win_rate}%`} />
+                <Stat label="Total orders" value={String(v.total_orders || orders.length)} />
+                <Stat label="On-time" value={`${v.on_time || 85}%`} />
+                <Stat label="Avg response" value={`${v.avg_response_days || 1}d`} />
+                <Stat label="Win rate" value={`${v.win_rate || 25}%`} />
               </div>
             </div>
 
             <div className="rounded-2xl border bg-card p-5 space-y-3">
               <h3 className="font-display font-semibold">Contact</h3>
-              <Row icon={Mail} text={v.email} />
-              <Row icon={Phone} text="+1 (555) 240-9821" />
-              <Row icon={MapPin} text={v.country} />
+              <Row icon={Mail} text={v.email || 'N/A'} />
+              <Row icon={Phone} text={v.phone || '+1 (555) 240-9821'} />
+              <Row icon={MapPin} text={v.country || 'Global'} />
               <div className="flex gap-2 pt-2">
                 <Button size="sm" variant="outline" className="flex-1"><Edit className="h-3.5 w-3.5 mr-1.5" /> Edit</Button>
                 <Button size="sm" variant="outline" className="flex-1 text-destructive hover:text-destructive"><Ban className="h-3.5 w-3.5 mr-1.5" /> Blacklist</Button>
@@ -97,10 +126,10 @@ export default function VendorDetail({ params }: { params: Promise<{ id: string 
                   <tbody>
                     {orders.map((o) => (
                       <tr key={o.id} className="border-b last:border-0 hover:bg-muted/40">
-                        <td className="px-5 py-3 font-mono text-xs">{o.po_number}</td>
-                        <td className="px-5 py-3 text-muted-foreground">{fmtDate(o.issued_at)}</td>
+                        <td className="px-5 py-3 font-mono text-xs">{o.po_number || o.id.split('-')[0]}</td>
+                        <td className="px-5 py-3 text-muted-foreground">{fmtDate(o.issued_at || o.created_at)}</td>
                         <td className="px-5 py-3"><StatusBadge status={o.status} /></td>
-                        <td className="px-5 py-3 text-right font-medium tabular-nums">{fmtCurrency(o.total)}</td>
+                        <td className="px-5 py-3 text-right font-medium tabular-nums">{fmtCurrency(o.total_amount || o.total || 0)}</td>
                       </tr>
                     ))}
                   </tbody>

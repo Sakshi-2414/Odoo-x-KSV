@@ -81,7 +81,7 @@ Always respond conversationally in the 'message' field, then include 'action' JS
       }
     }));
 
-    const text = response.text();
+    const text = response.text;
     if (!text) throw new Error('No response from Gemini');
 
     return JSON.parse(text);

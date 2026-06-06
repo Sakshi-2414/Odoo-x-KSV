@@ -3,13 +3,10 @@ import createSupabaseServer from '../../../../../lib/supabase/server';
 
 const supabase = createSupabaseServer();
 
-type RouteContext = {
-	params: {
-		id: string;
-	};
-};
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(_request: Request, { params }: RouteContext) {
+export async function POST(_request: Request, context: RouteContext) {
+	const params = await context.params;
 	try {
 		const invoiceResult = await supabase.from('invoices').select('*').eq('id', params.id).single();
 		if (invoiceResult.error || !invoiceResult.data) {

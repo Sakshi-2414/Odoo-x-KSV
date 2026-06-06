@@ -109,7 +109,7 @@ Respond strictly in the provided JSON schema format.
       },
     }));
 
-    const text = response.text();
+    const text = response.text;
     if (!text) {
       throw new Error('No response text from Gemini');
     }

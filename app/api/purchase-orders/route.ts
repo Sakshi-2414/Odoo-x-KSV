@@ -7,8 +7,16 @@ function makePoNumber() {
 	return `PO-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`;
 }
 
-export async function GET() {
-	const { data, error } = await supabase.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(100);
+export async function GET(request: Request) {
+	const { searchParams } = new URL(request.url);
+	const vendorId = searchParams.get('vendor_id');
+
+	let query = supabase.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(100);
+	if (vendorId) {
+		query = query.eq('vendor_id', vendorId);
+	}
+
+	const { data, error } = await query;
 	if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 	return NextResponse.json(data);
 }
