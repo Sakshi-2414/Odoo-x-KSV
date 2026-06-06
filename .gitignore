@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+.npm/
+
+# build output
+.next/
+out/
+dist/
+coverage/
+.turbo/
+*.tsbuildinfo
+.eslintcache
+
+# environment files
+.env
+.env.*
+!.env.example
+
+# local seed metadata
+scripts/seed-ids.json
+
+# logs and runtime files
+*.log
+*.pid
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editor and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.cache/
+
+# deployment caches
+.vercel/
