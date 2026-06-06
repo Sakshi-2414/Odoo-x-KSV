@@ -1,133 +1,148 @@
-# VendorBridge AI
+# 🏢 VendorBridge AI
+**"Your AI Procurement Officer"**
 
-VendorBridge AI is a procurement workflow app for RFQs, quotations, approvals, purchase orders, invoices, vendor scoring, and AI-assisted decision making.
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E?logo=supabase)](https://supabase.com/)
+[![Gemini](https://img.shields.io/badge/Google%20Gen%20AI-Gemini%202.5-4285F4?logo=google)](https://ai.google.dev/)
+[![Resend](https://img.shields.io/badge/Resend-Email-black?logo=minutemailer)](https://resend.com/)
 
-This repository currently contains the Next.js application shell, typed domain models, Supabase helpers, and local seed/cleanup scripts used to bootstrap demo data.
+VendorBridge AI is an intelligent procurement workflow application designed to automate and streamline RFQs, quotations, approvals, purchase orders, and vendor scoring. Instead of a simple database CRUD app, VendorBridge AI acts as an **AI Procurement Officer working 24/7**, analyzing vendor history, delivery performance, and market trends to tell you exactly who to buy from and why.
 
-## What is in the repo
+---
 
-- App Router structure for authentication, dashboard, vendor portal, and API routes.
-- TypeScript models for procurement, vendor, quotation, invoice, RFQ, and AI data.
-- Supabase clients for browser, server, and admin usage.
-- Seed and cleanup scripts for populating demo data in Supabase.
+## ✨ Key Features
 
-## Tech Stack
+- 🤖 **AI Procurement Copilot**: A conversational interface powered by Gemini 2.5 Flash that parses natural language to create RFQs, compare quotes, and fetch analytics.
+- 📊 **Dynamic Vendor Trust Score**: Automatically computes a 0-100 score for vendors based on price competitiveness, delivery performance, response speed, and dispute rates.
+- ⚖️ **AI Quotation Analyzer**: Instantly compares multiple quotes, detects the best price and fastest delivery, and recommends the best overall value.
+- 🚨 **Risk Detection Engine**: Real-time alerts for price spikes, vendor reliability drops, approval bottlenecks, and single-vendor dependencies.
+- 🔄 **Automated Workflows**: Multi-tier dynamic approval routing (e.g., auto-escalating high-value requests >$10k) and automatic Purchase Order (PO) generation.
+- 📈 **Procurement Command Center**: A sleek, dark-glassmorphism dashboard giving live visibility into active RFQs, spending trends, and risk alerts.
 
-- Next.js 15
-- React 19
-- TypeScript
-- Supabase
-- Zod
-- Resend
-- Google Gen AI (Gemini 2.5 Flash)
+---
 
-## Prerequisites
+## 🏗️ Architecture & Workflow
 
-- Node.js 18+ recommended
-- npm
-- A Supabase project
-- A Gemini API Key (available free via Google AI Studio)
+```mermaid
+graph TD
+    A[Procurement Officer] -->|Chat Prompt or Form| B(Create RFQ)
+    B -->|Auto-matches Category| C[Vendor Invitation via Email]
+    C -->|Magic Link| D{Vendor Portal}
+    D -->|Submit Quotation| E[AI Quotation Analyzer]
+    E -->|Ranks & Recommends| F[Manager Approval]
+    F -->|If >$10k| G[Director Escalation]
+    F -->|Approved| H(Auto-Generate Draft PO)
+    G -->|Approved| H
+    H -->|Email PO| I[Vendor Acknowledges]
+```
 
-## Setup
+---
 
-1. Install dependencies:
+## 💻 Tech Stack
 
+- **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS (Custom Dark Glassmorphism Design)
+- **Backend**: Next.js API Routes, Node.js
+- **Database & Auth**: Supabase (PostgreSQL)
+- **AI Engine**: `@google/genai` (Gemini 2.5 Flash)
+- **Email Notifications**: Resend API
+- **Data Validation**: Zod
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- [Supabase](https://supabase.com/) Account & Project
+- [Google AI Studio](https://aistudio.google.com/) API Key (Gemini)
+- [Resend](https://resend.com/) API Key (Optional, for real emails)
+
+### 1. Installation
+
+Clone the repository and install dependencies:
 ```bash
+git clone https://github.com/Sakshi-2414/Odoo-x-KSV.git
+cd Odoo-x-KSV
 npm install
 ```
 
-2. Create a local environment file named `.env.local` and add the required variables:
+### 2. Environment Variables
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+Create a `.env.local` file in the root directory:
+
+```env
+# Public (client) Supabase values
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_URL=https://your-project-ref.supabase.co
+
+# Server (admin) Supabase values - keep secret
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GEMINI_API_KEY=your_gemini_api_key
+
+# Google Gemini API Key
+GEMINI_API_KEY=your_gemini_key
+
+# Optional: Resend API Key (Will fallback to Mock Mode if missing)
+RESEND_API_KEY=your_resend_key
 ```
 
-3. Start the development server:
+### 3. Database Seeding
+
+To quickly test the application, you can seed your Supabase database with dummy organizations, users, vendors, RFQs, and quotations.
+
+*Ensure your `.env.local` is fully populated first.*
+
+```bash
+# Seed the database
+npm run seed:supabase
+
+# If you ever want to reset/remove the seeded data:
+npm run cleanup:supabase
+```
+
+### 4. Start the Development Server
 
 ```bash
 npm run dev
 ```
+Navigate to `http://localhost:3000` to view the application.
 
-Then open `http://localhost:3000`.
+---
 
-## Scripts
-
-- `npm run dev` - start the Next.js development server
-- `npm run build` - build the app for production
-- `npm run start` - start the production server
-- `npm run lint` - run ESLint
-- `npm run seed:supabase` - seed demo procurement data into Supabase
-- `npm run cleanup:supabase` - remove rows created by the seed script
-
-## Seeding Demo Data
-
-The seed script expects `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to be available in your local `.env.local` file.
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-```
-
-Then run:
-
-```bash
-npm run seed:supabase
-```
-
-The seed script stores created IDs in `scripts/seed-ids.json` so reruns stay predictable. Use the cleanup script to remove the seeded rows.
-
-```bash
-npm run cleanup:supabase
-```
-
-## Project Structure
+## 📂 Project Structure
 
 ```text
 .
-├── app/                  Next.js App Router (Routes & Layouts)
-│   ├── api/ai/           Endpoints for AI Copilot, Quotes, and Scoring
-│   ├── (auth)/           Login and Authentication
-│   ├── (dashboard)/      Procurement Command Center (Approvals, RFQs, etc.)
-│   └── vendor-portal/    External portal for vendors to submit quotes
-├── components/           React UI Components
-│   ├── ai/               AI Copilot Chat UI
-│   ├── dashboard/        Metrics, Charts, and Live Trackers
-│   ├── layout/           Sidebars, Navbars, Wrappers
-│   ├── quotations/       Quote Comparison UI
-│   ├── rfqs/             RFQ creation forms
-│   └── shared/           Reusable UI elements
-├── features/             Core Domain & AI Logic
-│   ├── ai/               Gemini AI implementations (Copilot, Risk, Analyzer)
-│   ├── notifications/    Email/In-app alerts
-│   └── procurement/      Business logic for POs, Approvals
-├── hooks/                React hooks for realtime data and state management
-├── lib/                  Shared utilities and Supabase server/client
-├── scripts/              Supabase Seed and Cleanup scripts
-├── services/             Service-layer for Supabase Database operations
-├── types/                TypeScript definitions and Zod schemas
-└── utils/                Helper functions (formatters, generators)
+├── app/                  # Next.js App Router (Routes, API endpoints)
+│   ├── api/              # Backend endpoints (Approvals, POs, RFQs)
+│   └── (dashboard)/      # Frontend Procurement Command Center
+├── components/           # React UI Components (Dashboard, Shared, AI)
+├── features/             # Core Domain & AI Logic
+│   ├── ai/               # Gemini AI implementations (Copilot, Risk, Analyzer)
+│   ├── notifications/    # Resend Email wrappers & Mock fallbacks
+│   └── procurement/      # Business logic (PO workflows, Approvals, State integrity)
+├── hooks/                # Custom React hooks
+├── lib/                  # Shared utilities and Supabase clients
+├── scripts/              # Database Seeding and Cleanup scripts
+├── services/             # Direct Supabase Data Access Layer
+└── types/                # TypeScript interfaces and Zod schemas
 ```
 
-## AI Implementation Details
+---
 
-The backend AI logic relies on the official `@google/genai` library and `gemini-2.5-flash` to handle intent parsing, multi-variable vendor scoring, and quotation analysis. It includes built-in retry mechanisms to safely handle Free Tier rate limits (15 RPM).
+## 🛡️ Implementation Details
 
-## Backend Business Logic
-
-The core procurement workflows are fully implemented and automated in the `features/procurement/` directory:
+### Backend Business Logic
+The core procurement workflows are fully implemented and automated in the `features/procurement/` directory to ensure data integrity across API routes:
 - **Purchase Orders**: Auto-generates Draft POs upon quotation award and tracks vendor issuance metrics.
-- **Approvals**: Dynamic multi-tier workflow routing. High-value requests (>$10k) automatically escalate from Manager to Director, executing the final business action when fully approved.
-- **RFQs & Quotations**: Enforces state integrity (e.g., auto-rejecting competing quotes when a winner is chosen) and manages active publishing states.
-- **Notifications**: Includes a Resend email wrapper with a safe mock-mode fallback for local development without API keys.
+- **Approvals**: Dynamic multi-tier workflow routing. High-value requests automatically escalate, executing final business actions upon full approval.
+- **Quotations**: Enforces state integrity (e.g., auto-rejecting competing quotes when a winner is chosen).
 
-## Notes
+### AI Rate Limiting & Safety
+The backend AI logic includes built-in retry mechanisms and exponential backoff to safely handle Free Tier API rate limits (15 RPM). AI functions strictly output validated JSON arrays.
 
-- The repository is set up around the VendorBridge AI procurement workflow described in `vendorbridge-ai-blueprint.md`.
-- Local-generated files such as `.next`, `node_modules`, `.env.local`, and `scripts/seed-ids.json` are ignored.
-- If you update the database schema, keep the corresponding files in `types/` and the seed script in sync.
+---
+
+*Built for the Odoo x KSV Hackathon 2026.*
